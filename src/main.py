@@ -10,16 +10,6 @@ load_dotenv()
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
 
-def ytdl_download(url, output):
-    opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': output,
-        'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
-        'quiet': True
-    }
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        ydl.download([url])
-
 @bot.event
 async def on_ready():
     await bot.tree.sync()
@@ -29,14 +19,41 @@ async def on_ready():
 async def download(interaction: discord.Interaction, link: str):
     await interaction.response.defer()
     
-    mp3_path = f"dl_{interaction.user.id}.mp3"
+    filename = f"dl_{interaction.user.id}"
+    mp3_path = f"{filename}.mp3"
+    
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': filename,
+        'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
+        'quiet': True,
+        'js_runtimes': {'node': {}}
+    }
     
     try:
-        await asyncio.to_thread(ytdl_download, link, mp3_path.replace('.mp3', ''))
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = await asyncio.to_thread(ydl.extract_info, link, download=True)
         
-        await interaction.followup.send(file=discord.File(mp3_path))
-    except Exception:
-        await interaction.followup.send("Hiba történt a letöltés során.")
+        title = info.get('title', 'Ismeretlen cím')
+        uploader = info.get('uploader', 'Ismeretlen előadó')
+        thumbnail = info.get('thumbnail')
+        
+        duration_sec = info.get('duration', 0)
+        duration = f"{int(duration_sec // 60)}:{int(duration_sec % 60):02d}" if duration_sec else "Ismeretlen"
+
+        embed = discord.Embed(title="Sikeres letöltés!", color=discord.Color.blue())
+        embed.add_field(name="Cím", value=title, inline=False)
+        embed.add_field(name="Előadó", value=uploader, inline=True)
+        embed.add_field(name="Hossz", value=duration, inline=True)
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail)
+
+        discord_file = discord.File(mp3_path, filename=f"{title}.mp3")
+        await interaction.followup.send(embed=embed, file=discord_file)
+
+    except Exception as e:
+        print(f"HIBA: {e}")
+        await interaction.followup.send(f"Hiba történt a letöltés során.")
     finally:
         if os.path.exists(mp3_path):
             os.remove(mp3_path)
