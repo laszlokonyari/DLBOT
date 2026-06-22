@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  dlbot:
+    build: .
+    container_name: music_dl_bot
+    restart: always
+    env_file:
+      - .env
