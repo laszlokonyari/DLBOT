@@ -29,8 +29,8 @@ async def download(interaction: discord.Interaction, link: str):
         'quiet': True,
         'extractor_args': {
             'youtube': {
-                'player_client': ['tv', 'android'],
-                'player_skip': ['webpage', 'configs']
+                'player_client': ['web'],
+                'po_token': ['web+guest'],
             }
         }
     }
