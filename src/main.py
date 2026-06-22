@@ -27,13 +27,12 @@ async def download(interaction: discord.Interaction, link: str):
         'outtmpl': filename,
         'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
         'quiet': True,
-        'username': 'oauth2',
-        'password': '',
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web'],
+                'player_client': ['web_embedded', 'ios'],
+                'player_skip': ['webpage', 'configs']
             }
-        },
+        }
     }
     
     try:
